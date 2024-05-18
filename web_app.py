@@ -24,18 +24,13 @@ safety_df = pd.DataFrame({
 })
 
 # Data for cargo and fleet management 
-#Define the data for tanker and container types
-
-tanker_types = ['Coastal Tanker', 'Aframax', 'Suez-Max', 'VeryLargeCrudeCarrier', 'ULCC']
-container_types = ['Small Feeder', 'Feeder', 'Feeder Max', 'Pana', 'Post-Panamax']
-
 # Define possible types of tankers and containers
-tanker_types = ['Crude Oil', 'Product', 'Chemical', 'LNG', 'LPG']
-container_types = ['Feeder', 'Panamax', 'Post-Panamax', 'Ultra Large Container Ship (ULCS)']
+tanker_types = ['Crude Oil', 'Chemical', 'LNG', 'LPG', 'Coastal Tanker', 'Aframax', 'Suez-Max', 'VeryLargeCrudeCarrier', 'ULCC']
+container_types = ['Small Feeder', 'Feeder', 'Feeder Max', 'Panamax', 'Post-Panamax', 'Ultra Large Container Ship (ULCS)']
 
 # Generate random types for each month
-tanker_data = [random.choice(tanker_types) for _ in range(12)]
-container_data = [random.choice(container_types) for _ in range(12)]
+tanker_data = [random.choice(tanker_types) for a in range(12)]
+container_data = [random.choice(container_types) for b in range(12)]
 
 # Define ship categories and types
 ship_types = {
@@ -43,6 +38,7 @@ ship_types = {
     'CONTAINER': container_types,
     'TANKER': tanker_types
 }
+
 
 # Define function to generate random dimensions for each ship type
 def generate_dimensions(ship_type):
@@ -76,15 +72,12 @@ cargo_df = pd.DataFrame({
     'CargoCapacity': [random.randint(900, 1200) for _ in range(12)],  
     'DemandForecast': [random.randint(950, 1250) for _ in range(12)],
     'TankerType': tanker_data,
-    'ContainerType': container_data,
-    'ShipType': ['Platform Supply Vessel', 'Container', 'Tanker'] * 4
+   
+    'ShipType': ['PSV', 'CONTAINER', 'TANKER'] * 4  # Use keys from ship_types dictionary
 })
 
-# Add ship category column
-cargo_df['ship_category'] = cargo_df['ShipType']
-
 # Add ship type column
-cargo_df['ship_type'] = cargo_df['ship_category'].apply(lambda x: random.choice(ship_types[x]))
+cargo_df['ship_type'] = cargo_df['ShipType'].apply(lambda x: random.choice(ship_types[x]))
 
 # Add dimensions column
 cargo_df['dimensions'] = cargo_df['ship_type'].apply(generate_dimensions)
