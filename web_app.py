@@ -1,6 +1,6 @@
 import dash
-from dash import dcc, html, Input, Output
-import plotly.graph_objs as plt
+from dash import dcc, html, Input, Output, dash_table
+import plotly.graph_objs as go
 import pandas as pd 
 import random
 
@@ -23,6 +23,7 @@ safety_df = pd.DataFrame({
     'CollisionRisk': [0.1, 0.2, 0.15, 0.3, 0.25, 0.2, 0.18, 0.22, 0.28, 0.3, 0.25, 0.2]
 })
 
+
 # Data for cargo and fleet management 
 # Define possible types of tankers and containers
 tanker_types = ['Crude Oil', 'Chemical', 'LNG', 'LPG', 'Coastal Tanker', 'Aframax', 'Suez-Max', 'VeryLargeCrudeCarrier', 'ULCC']
@@ -34,11 +35,10 @@ container_data = [random.choice(container_types) for b in range(12)]
 
 # Define ship categories and types
 ship_types = {
-    'PSV': ['Platform Supply Vessel'],
+    'OSV': ['Platform Supply Vessel', 'AnchorHandlingTug', 'OffshoreConstructionVeh'],
     'CONTAINER': container_types,
     'TANKER': tanker_types
 }
-
 
 # Define function to generate random dimensions for each ship type
 def generate_dimensions(ship_type):
@@ -55,35 +55,53 @@ def generate_dimensions(ship_type):
 def generate_capacity(ship_type):
     if ship_type == 'Crude Oil':
         return random.randint(50000, 500000)  # Random capacity between 50,000 and 500,000 DWT
-    elif ship_type == 'Product':
-        return random.randint(20000, 200000)  # Random capacity between 20,000 and 200,000 DWT
     elif ship_type == 'Chemical':
         return random.randint(10000, 100000)  # Random capacity between 10,000 and 100,000 DWT
     elif ship_type == 'LNG':
         return random.randint(100000, 300000)  # Random capacity between 100,000 and 300,000 DWT
     elif ship_type == 'LPG':
         return random.randint(50000, 150000)  # Random capacity between 50,000 and 150,000 DWT
+    elif ship_type == 'Coastal Tanker':
+        return random.randint(5000, 50000)  # Random capacity between 5,000 and 50,000 DWT
+    elif ship_type == 'Aframax':
+        return random.randint(80000, 120000)  # Random capacity between 80,000 and 120,000 DWT
+    elif ship_type == 'Suez-Max':
+        return random.randint(120000, 200000)  # Random capacity between 120,000 and 200,000 DWT
+    elif ship_type == 'VeryLargeCrudeCarrier':
+        return random.randint(200000, 320000)  # Random capacity between 200,000 and 320,000 DWT
+    elif ship_type == 'ULCC':
+        return random.randint(320000, 550000)  # Random capacity between 320,000 and 550,000 DWT
+    elif ship_type == 'Small Feeder':
+        return random.randint(500, 1000)  # Random capacity between 500 and 1,000 TEU
+    elif ship_type == 'Feeder':
+        return random.randint(1000, 2000)  # Random capacity between 1,000 and 2,000 TEU
+    elif ship_type == 'Feeder Max':
+        return random.randint(2000, 3000)  # Random capacity between 2,000 and 3,000 TEU
+    elif ship_type == 'Panamax':
+        return random.randint(3000, 5000)  # Random capacity between 3,000 and 5,000 TEU
+    elif ship_type == 'Post-Panamax':
+        return random.randint(5000, 10000)  # Random capacity between 5,000 and 10,000 TEU
+    elif ship_type == 'Ultra Large Container Ship (ULCS)':
+        return random.randint(10000, 24000)  # Random capacity between 10,000 and 24,000 TEU
     else:
         return None
-
 # Create DataFrame
 cargo_df = pd.DataFrame({
     'Month': pd.date_range(start='2024-01-01', periods=12, freq='MS'),
-    'CargoCapacity': [random.randint(900, 1200) for _ in range(12)],  
-    'DemandForecast': [random.randint(950, 1250) for _ in range(12)],
-    'TankerType': tanker_data,
-   
-    'ShipType': ['PSV', 'CONTAINER', 'TANKER'] * 4  # Use keys from ship_types dictionary
+    'CargoCapacity': [random.randint(900, 1200) for _ in range(12)],
+    'VesselCategory': ['OSV', 'CONTAINER', 'TANKER'] * 4  # Use keys from ship_types dictionary
 })
 
 # Add ship type column
-cargo_df['ship_type'] = cargo_df['ShipType'].apply(lambda x: random.choice(ship_types[x]))
+cargo_df['ship_type'] = cargo_df['VesselCategory'].apply(lambda x: random.choice(ship_types[x]))
 
 # Add dimensions column
-cargo_df['dimensions'] = cargo_df['ship_type'].apply(generate_dimensions)
+cargo_df['Dimensions'] = cargo_df['ship_type'].apply(generate_dimensions)
+cargo_df['Dimensions'] = cargo_df['Dimensions'].apply(lambda x : str(x))
 
 # Add capacity column
-cargo_df['capacity'] = cargo_df['ship_type'].apply(generate_capacity)
+cargo_df['Capacity (DWT)'] = cargo_df['ship_type'].apply(generate_capacity)
+
 
 print(cargo_df)
 
@@ -100,6 +118,8 @@ app.layout = html.Div([
     #add components here
     html.Div([
         html.H2("Route and Vessell Perfomance Prediction"),
+        dash_table.DataTable(data = route_performance_df.to_dict('records'),
+                             columns = [{"name": j, "id": j}for j in route_performance_df.columns]),
         #Safety/Risk mgt related graphs / components
         dcc.Graph(id = 'safety-risk')
     ]),
@@ -107,6 +127,8 @@ app.layout = html.Div([
     html.Div([
         html.H2("Cargo and Fleet Management"),
         #Graphs/ Other components re: fleet/cargo mgt
+        dash_table.DataTable(data = cargo_df.to_dict('records'),
+                             columns = [{"name": i, "id": i} for i in cargo_df.columns]),
         dcc.Graph(id = 'Carg-fleet')
     ]),
 
@@ -124,12 +146,12 @@ app.layout = html.Div([
 )
 def update_route_vessel(graph_id):
     traces = [
-        plt.Scatter( x = route_performance_df['Date'], y = route_performance_df['EstFuelCons'],
+        go.Scatter( x = route_performance_df['Date'], y = route_performance_df['EstFuelCons'],
                    mode = 'lines', name = ' Estimated Fuel Consumption'),
-        plt.Scatter(x = route_performance_df['Date'], y = route_performance_df['ActFuelCons'], 
+        go.Scatter(x = route_performance_df['Date'], y = route_performance_df['ActFuelCons'], 
                     mode = 'lines', name = 'Actual Fuel Consumption')
     ]
-    layout = plt.Layout(title = 'Route and Vess Perfomance Prediction'
+    layout = go.Layout(title = 'Route and Vess Perfomance Prediction'
                        ,xaxis = dict(title = 'Date'),
                        yaxis = dict(title='Fuel Consumption'))
     return {'data': traces, 'layout': layout}
@@ -141,12 +163,27 @@ def update_route_vessel(graph_id):
 )
 def update_cargo_graph(graph_id):
     traces = [
-        plt.Bar(x = cargo_df['Month'], y = cargo_df['CargoCapacity'], name = 'Cargo Capacity'),
-        plt.Bar(x = cargo_df['Month'], y = cargo_df['DemandForecast'], name = 'Demand')]
+        go.Bar(x = cargo_df['Month'], y = cargo_df['CargoCapacity'], name = 'Cargo Capacity'),
+        #go.Bar(x = cargo_df['Month'], y = cargo_df['DemandForecast'], name = 'Demand')
+    ]
     
-    layout = plt.Layout(title = 'Cargo and Fleet Management',
+    layout = go.Layout(title = 'Cargo and Fleet Management',
                         xaxis = dict(title='Month'),
                         yaxis = dict(title = 'Quantity (Tons)'))
+    
+    return {'data': traces, 'layout': layout}
+
+@app.callback(Output('Port-Log-ops', 'figure'),
+              Input('Port-Log-ops', 'id'))
+
+def update_port_logs_graph(graph_id):
+    traces = [
+        go.Scatter(x = port_data['Date'], y = port_data['PortCongestion'], 
+                   mode = 'lines', name = 'PortCongestion')]
+    
+    layout = go.Layout(title = 'Port Logisitics Optimisation',
+                       xaxis = dict(title= 'Date'),
+                       yaxis = dict(title = 'Congestion Level'))
     
     return {'data': traces, 'layout': layout}
 
