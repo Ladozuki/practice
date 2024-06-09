@@ -95,16 +95,13 @@ cargo_df = pd.DataFrame({
 # Add ship type column
 cargo_df['ship_type'] = cargo_df['VesselCategory'].apply(lambda x: random.choice(ship_types[x]))
 
+
 # Add dimensions column
 cargo_df['Dimensions'] = cargo_df['ship_type'].apply(generate_dimensions)
 cargo_df['Dimensions'] = cargo_df['Dimensions'].apply(lambda x : str(x))
 
 # Add capacity column
 cargo_df['Capacity (DWT)'] = cargo_df['ship_type'].apply(generate_capacity)
-
-
-print(cargo_df)
-
 
 # Data for logistics optimization
 port_data = pd.DataFrame({
